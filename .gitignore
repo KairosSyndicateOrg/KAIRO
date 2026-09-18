@@ -1,0 +1,12 @@
+.env
+
+__pycache__/
+*.pyc
+
+runs/
+dataset/
+
+yolo26n.pt
+
+data/targetfinder_yolo/images/
+data/targetfinder_yolo/labels/

@@ -1,0 +1,12 @@
+path: C:/Users/BRIGHT/Desktop/projects/project-cursor/data/targetfinder_yolo
+
+train: images/train
+val: images/val
+
+names:
+  0: Button
+  1: ToggleButton
+  2: TextInput
+  3: Slider
+  4: Text
+  5: Hyperlink
