@@ -4,3 +4,4 @@ PyAutoGUI==0.9.54
 mss==10.2.0
 Pillow==12.3.0
 pydantic==2.13.5
+PyGetWindow==0.0.9
