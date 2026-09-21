@@ -2,6 +2,13 @@ from pydantic import BaseModel, Field
 from typing import Literal
 
 
+class Goal(BaseModel):
+    id: str
+    description: str
+    success_criteria: str
+    open_ended: bool = False
+
+
 class Action(BaseModel):
     action: Literal[
         "hotkey",
@@ -11,6 +18,8 @@ class Action(BaseModel):
         "wait",
         "done"
     ]
+
+    goal_id: str | None = None
 
     keys: list[str] | None = None
     key: str | None = None
@@ -22,4 +31,5 @@ class Action(BaseModel):
 
 
 class ActionPlan(BaseModel):
+    goals: list[Goal] = Field(min_length=1)
     actions: list[Action] = Field(min_length=1)

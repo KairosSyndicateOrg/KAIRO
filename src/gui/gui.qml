@@ -1,421 +1,307 @@
-import QtQuick
-import QtQuick.Controls
-import QtQuick.Window
+import QtQuick 6.8
+import QtQuick.Controls 6.8
+import QtQuick.Window 6.8
 
 Window {
-    id: root
-
-    width: 760
-    height: 82
-
+    id: win
+    width: 520
+    height: 180
+    minimumWidth: 440
+    minimumHeight: 150
+    maximumWidth: 760
+    maximumHeight: 240
     visible: true
+    color: "transparent"
+    flags: Qt.FramelessWindowHint | Qt.Window
     title: "KAIRO"
 
-    color: "transparent"
+    property string uiStatus: "READY"
+    property bool busy: false
 
-    flags: Qt.FramelessWindowHint | Qt.Window
+    readonly property color black: "#000000"
+    readonly property color surface: "#0A0A0C"
+    readonly property color surface2: "#101012"
+    readonly property color border: "#1D1D21"
+    readonly property color borderSoft: "#141417"
+    readonly property color primary: "#F2F2F2"
+    readonly property color muted: "#77777D"
+    readonly property color dim: "#3C3C42"
+    readonly property color accent: "#D7D7DB"
 
-    property string appState: "idle"
-    property string resultText: ""
+    function submitTask() {
+        var command = commandField.text.trim()
+        if (!command || busy)
+            return
 
-    // =========================================================
-    // BACKEND CONNECTION
-    // =========================================================
+        busy = true
+        uiStatus = "PLANNING"
+        kairoBridge.run_task(command)
+        commandField.selectAll()
+        commandField.forceActiveFocus()
+    }
+
+    function statusText() {
+        if (uiStatus === "PLANNING") return "Thinking"
+        if (uiStatus === "EXECUTING") return "Working"
+        if (uiStatus === "COMPLETED") return "Done"
+        if (uiStatus === "FAILED") return "Stopped"
+        if (uiStatus === "ERROR") return "Something went wrong"
+        return "Ready"
+    }
+
+    // Subtle animated backdrop: intentionally restrained.
+    Rectangle {
+        anchors.fill: parent
+        radius: 18
+        color: black
+        border.width: 1
+        border.color: border
+        clip: true
+
+        Rectangle {
+            id: glow
+            width: 260
+            height: 260
+            radius: 130
+            x: parent.width - width * 0.38
+            y: parent.height - height * 0.70
+            color: "#FFFFFF"
+            opacity: 0.018
+
+            SequentialAnimation on opacity {
+                running: !busy
+                loops: Animation.Infinite
+                NumberAnimation { to: 0.026; duration: 1800; easing.type: Easing.InOutSine }
+                NumberAnimation { to: 0.010; duration: 1800; easing.type: Easing.InOutSine }
+            }
+
+            SequentialAnimation on x {
+                running: true
+                loops: Animation.Infinite
+                NumberAnimation { to: parent.width - width * 0.44; duration: 7000; easing.type: Easing.InOutSine }
+                NumberAnimation { to: parent.width - width * 0.30; duration: 7000; easing.type: Easing.InOutSine }
+            }
+        }
+
+        Rectangle {
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.bottom: parent.bottom
+            height: 1
+            color: borderSoft
+        }
+    }
+
+    // Lets the whole window be dragged.
+    MouseArea {
+        anchors.fill: parent
+        acceptedButtons: Qt.LeftButton
+        z: 0
+        onPressed: function(mouse) {
+            win.startSystemMove()
+        }
+    }
+
+    Column {
+        anchors.fill: parent
+        anchors.margins: 16
+        spacing: 12
+        z: 1
+
+        Row {
+            width: parent.width
+            height: 28
+            spacing: 10
+
+            Rectangle {
+                width: 28
+                height: 28
+                radius: 9
+                color: surface2
+                border.width: 1
+                border.color: border
+
+                Text {
+                    anchors.centerIn: parent
+                    text: "K"
+                    color: primary
+                    font.pixelSize: 14
+                    font.bold: true
+                }
+            }
+
+            Column {
+                width: parent.width - 110
+                spacing: 1
+                anchors.verticalCenter: parent.verticalCenter
+
+                Text {
+                    text: "KAIRO"
+                    color: primary
+                    font.pixelSize: 11
+                    font.bold: true
+                    font.letterSpacing: 1.5
+                }
+
+                Row {
+                    spacing: 6
+
+                    Rectangle {
+                        width: 6
+                        height: 6
+                        radius: 3
+                        anchors.verticalCenter: parent.verticalCenter
+                        color: busy ? accent : dim
+
+                        SequentialAnimation on opacity {
+                            running: busy
+                            loops: Animation.Infinite
+                            NumberAnimation { to: 0.25; duration: 650 }
+                            NumberAnimation { to: 1.0; duration: 650 }
+                        }
+                    }
+
+                    Text {
+                        text: statusText()
+                        color: muted
+                        font.pixelSize: 8
+                    }
+                }
+            }
+
+            Item { width: 1; height: 1 }
+
+            Rectangle {
+                width: 28
+                height: 28
+                radius: 9
+                color: "transparent"
+                border.width: 1
+                border.color: border
+
+                Text {
+                    anchors.centerIn: parent
+                    text: "—"
+                    color: muted
+                    font.pixelSize: 11
+                }
+
+                MouseArea {
+                    anchors.fill: parent
+                    onClicked: win.showMinimized()
+                }
+            }
+
+            Rectangle {
+                width: 28
+                height: 28
+                radius: 9
+                color: "transparent"
+                border.width: 1
+                border.color: border
+
+                Text {
+                    anchors.centerIn: parent
+                    text: "×"
+                    color: muted
+                    font.pixelSize: 13
+                }
+
+                MouseArea {
+                    anchors.fill: parent
+                    onClicked: Qt.quit()
+                }
+            }
+        }
+
+        Text {
+            width: parent.width
+            text: "What should I do?"
+            color: primary
+            font.pixelSize: 19
+            font.weight: Font.Medium
+        }
+
+        Row {
+            width: parent.width
+            height: 48
+            spacing: 8
+
+            Rectangle {
+                width: parent.width - 56
+                height: 48
+                radius: 12
+                color: surface
+                border.width: 1
+                border.color: commandField.activeFocus ? "#2A2A2F" : border
+
+                Behavior on border.color {
+                    ColorAnimation { duration: 120 }
+                }
+
+                TextField {
+                    id: commandField
+                    anchors.fill: parent
+                    anchors.leftMargin: 14
+                    anchors.rightMargin: 10
+                    anchors.topMargin: 2
+                    anchors.bottomMargin: 2
+                    placeholderText: "Tell KAIRO what to do..."
+                    placeholderTextColor: muted
+                    color: primary
+                    font.pixelSize: 11
+                    selectByMouse: true
+                    enabled: !busy
+                    background: Item {}
+                    Keys.onReturnPressed: submitTask()
+                }
+            }
+
+            Rectangle {
+                width: 48
+                height: 48
+                radius: 12
+                color: busy ? surface : surface2
+                border.width: 1
+                border.color: busy ? borderSoft : "#28282D"
+
+                Text {
+                    anchors.centerIn: parent
+                    text: busy ? "…" : "↑"
+                    color: busy ? muted : primary
+                    font.pixelSize: busy ? 16 : 18
+                    font.bold: true
+                }
+
+                MouseArea {
+                    anchors.fill: parent
+                    enabled: !busy
+                    onClicked: submitTask()
+                }
+            }
+        }
+
+        Text {
+            text: busy ? "KAIRO is working on it…" : "Press Ctrl+K to focus the command box"
+            color: dim
+            font.pixelSize: 8
+        }
+    }
 
     Connections {
         target: kairoBridge
 
         function onStatus_changed(status) {
-
-            if (status === "PLANNING") {
-                root.appState = "working"
-                root.resultText = "Gemini is planning..."
-            }
-
-            else if (status === "COMPLETED") {
-                root.completeTask()
-            }
-
-            else if (status === "ERROR") {
-                root.appState = "idle"
-                root.resultText = "Task failed."
-                commandInput.enabled = true
-            }
+            uiStatus = status
+            busy = status === "PLANNING" || status === "EXECUTING"
         }
     }
 
-
-    // =========================================================
-    // FUNCTIONS
-    // =========================================================
-
-    function startWorking() {
-
-        if (commandInput.text.trim().length === 0)
-            return
-
-        appState = "working"
-        resultText = ""
-
-        commandInput.enabled = false
-
-        kairoBridge.run_task(
-            commandInput.text.trim()
-        )
+    Shortcut {
+        sequence: "Ctrl+K"
+        enabled: !busy
+        onActivated: commandField.forceActiveFocus()
     }
 
-
-    function completeTask() {
-
-        appState = "completed"
-        resultText = "Task completed successfully."
-
-        commandInput.enabled = true
-    }
-
-
-    function resetTask() {
-
-        appState = "idle"
-        resultText = ""
-
-        commandInput.enabled = true
-        commandInput.text = ""
-
-        commandInput.forceActiveFocus()
-    }
-
-
-    // =========================================================
-    // MAIN BACKGROUND
-    // =========================================================
-
-    Rectangle {
-        id: background
-
-        anchors.fill: parent
-
-        radius: 24
-
-        color: "#080B12"
-
-        border.width: 1
-        border.color: root.appState === "working"
-                      ? "#3948A0"
-                      : "#1B2435"
-
-
-        // =====================================================
-        // SUBTLE GLOW
-        // =====================================================
-
-        Rectangle {
-            anchors.fill: parent
-
-            anchors.margins: -3
-
-            radius: 27
-
-            color: "transparent"
-
-            border.width: 2
-
-            border.color: root.appState === "working"
-                          ? "#5267FF"
-                          : "#18213A"
-
-            opacity: root.appState === "working"
-                     ? 0.45
-                     : 0.18
-
-            Behavior on opacity {
-                NumberAnimation {
-                    duration: 300
-                }
-            }
-        }
-
-
-        // =====================================================
-        // WINDOW DRAG AREA
-        // =====================================================
-
-        MouseArea {
-            id: dragArea
-
-            anchors.fill: parent
-
-            acceptedButtons: Qt.LeftButton
-
-            onPressed: {
-                root.startSystemMove()
-            }
-        }
-
-
-        // =====================================================
-        // KAIRO LOGO
-        // =====================================================
-
-        Row {
-            id: logo
-
-            anchors.left: parent.left
-            anchors.leftMargin: 22
-
-            anchors.verticalCenter: parent.verticalCenter
-
-            spacing: 9
-
-
-            Text {
-                text: "✦"
-
-                color: "#687AFF"
-
-                font.pixelSize: 17
-            }
-
-
-            Text {
-                text: "KAIRO"
-
-                color: "#EEF1FF"
-
-                font.pixelSize: 13
-
-                font.bold: true
-
-                font.letterSpacing: 2
-            }
-
-
-            Text {
-                text: "AI"
-
-                color: "#5366FF"
-
-                font.pixelSize: 9
-
-                font.bold: true
-
-                font.letterSpacing: 1
-            }
-        }
-
-
-        // =====================================================
-        // STATUS DOT
-        // =====================================================
-
-        Rectangle {
-            id: statusDot
-
-            width: 7
-            height: 7
-
-            radius: 3.5
-
-            anchors.left: logo.right
-            anchors.leftMargin: 18
-
-            anchors.verticalCenter: parent.verticalCenter
-
-            color: root.appState === "working"
-                   ? "#687AFF"
-                   : root.appState === "completed"
-                     ? "#66D69A"
-                     : "#536174"
-
-
-            SequentialAnimation on opacity {
-
-                running: root.appState === "working"
-
-                loops: Animation.Infinite
-
-                NumberAnimation {
-                    from: 1
-                    to: 0.25
-
-                    duration: 600
-                }
-
-                NumberAnimation {
-                    from: 0.25
-                    to: 1
-
-                    duration: 600
-                }
-            }
-        }
-
-
-        // =====================================================
-        // COMMAND INPUT
-        // =====================================================
-
-        TextField {
-            id: commandInput
-
-            anchors.left: statusDot.right
-            anchors.leftMargin: 18
-
-            anchors.verticalCenter: parent.verticalCenter
-
-            width: 480
-            height: 52
-
-            placeholderText: root.appState === "working"
-                            ? "Kairo is working..."
-                            : root.appState === "completed"
-                              ? "Task completed"
-                              : "What should I do?"
-
-            placeholderTextColor: "#465267"
-
-            color: "#EEF2FF"
-
-            font.pixelSize: 15
-
-            background: null
-
-            enabled: root.appState !== "working"
-
-            selectByMouse: true
-
-            Keys.onReturnPressed: {
-
-                event.accepted = true
-
-                root.startWorking()
-            }
-        }
-
-
-        // =====================================================
-        // EXECUTE BUTTON
-        // =====================================================
-
-        Rectangle {
-            id: executeButton
-
-            anchors.right: closeButton.left
-            anchors.rightMargin: 10
-
-            anchors.verticalCenter: parent.verticalCenter
-
-            width: 42
-            height: 42
-
-            radius: 14
-
-            color: executeArea.containsMouse
-                   ? "#687AFF"
-                   : "#5267FF"
-
-            scale: executeArea.containsMouse
-                   ? 1.06
-                   : 1.0
-
-            Behavior on scale {
-                NumberAnimation {
-                    duration: 130
-
-                    easing.type: Easing.OutBack
-                }
-            }
-
-            Behavior on color {
-                ColorAnimation {
-                    duration: 130
-                }
-            }
-
-
-            Text {
-                anchors.centerIn: parent
-
-                text: root.appState === "working"
-                      ? "•••"
-                      : "→"
-
-                color: "white"
-
-                font.pixelSize: root.appState === "working"
-                               ? 10
-                               : 21
-
-                font.bold: true
-            }
-
-
-            MouseArea {
-                id: executeArea
-
-                anchors.fill: parent
-
-                hoverEnabled: true
-
-                cursorShape: Qt.PointingHandCursor
-
-                enabled: root.appState !== "working"
-
-                onClicked: {
-                    root.startWorking()
-                }
-            }
-        }
-
-
-        // =====================================================
-        // CLOSE BUTTON
-        // =====================================================
-
-        Rectangle {
-            id: closeButton
-
-            anchors.right: parent.right
-            anchors.rightMargin: 13
-
-            anchors.verticalCenter: parent.verticalCenter
-
-            width: 32
-            height: 32
-
-            radius: 16
-
-            color: closeArea.containsMouse
-                   ? "#25131A"
-                   : "transparent"
-
-
-            Text {
-                anchors.centerIn: parent
-
-                text: "×"
-
-                color: closeArea.containsMouse
-                       ? "#FF718C"
-                       : "#667286"
-
-                font.pixelSize: 18
-            }
-
-
-            MouseArea {
-                id: closeArea
-
-                anchors.fill: parent
-
-                hoverEnabled: true
-
-                cursorShape: Qt.PointingHandCursor
-
-                onClicked: {
-                    root.close()
-                }
-            }
-        }
-    }
+    Component.onCompleted: commandField.forceActiveFocus()
 }

@@ -9,6 +9,7 @@ from bridge import KairoBridge
 
 
 def main():
+
     app = QGuiApplication(sys.argv)
 
     engine = QQmlApplicationEngine()
@@ -20,11 +21,18 @@ def main():
         bridge
     )
 
-    qml_file = Path(__file__).parent / "gui" / "gui.qml"
+    qml_file = (
+        Path(__file__).parent
+        / "gui"
+        / "gui.qml"
+    )
 
-    engine.load(QUrl.fromLocalFile(str(qml_file)))
+    engine.load(
+        QUrl.fromLocalFile(str(qml_file))
+    )
 
     if not engine.rootObjects():
+
         sys.exit(-1)
 
     sys.exit(app.exec())
